@@ -1,6 +1,5 @@
-import Image from "next/image";
 import styles from "./page.module.css";
-import Spline from "@splinetool/react-spline/next";
+import Spline from '@splinetool/react-spline/next';
 
 export default function Home() {
   return (
