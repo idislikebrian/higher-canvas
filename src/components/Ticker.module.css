@@ -1,0 +1,33 @@
+.container {
+  width: 100%;
+  overflow: hidden;
+  background: white;
+  border-bottom: 1px solid black;
+  padding: 8px 0;
+  z-index: 999;
+}
+
+.track {
+  display: inline-flex;
+  white-space: nowrap;
+}
+
+.item {
+  margin-right: 48px;
+  font-family: monospace;
+  font-size: 1.125rem;
+  transition: color 0.2s ease;
+}
+
+/* flash states */
+.up {
+  color: #0c8a00; /* green */
+}
+
+.down {
+  color: #cc0000; /* red */
+}
+
+.neutral {
+  color: black;
+}
