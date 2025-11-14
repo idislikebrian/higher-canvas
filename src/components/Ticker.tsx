@@ -1,107 +1,168 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback, useRef, ReactElement } from "react";
+import { motion, useAnimation } from "framer-motion";
 import styles from "./Ticker.module.css";
 
-interface TokenPair {
-  pair: string;
-}
+type Token = { pair: string };
 
-interface PriceData {
+type TokenState = {
   symbol: string;
-  priceUsd: number;
-}
+  price: number;
+  prevPrice: number | null;
+  changePct: number;
+  direction: "up" | "down" | "neutral";
+};
 
-interface FlashState {
-  [symbol: string]: "up" | "down" | "neutral";
-}
+export default function Ticker({ tokens }: { tokens: Token[] }) {
+  const [prices, setPrices] = useState<Record<string, TokenState>>({});
+  const [flash, setFlash] = useState<Record<string, "up" | "down" | "neutral">>(
+    {}
+  );
+  const controls = useAnimation();
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
-export default function Ticker({ tokens }: { tokens: TokenPair[] }) {
-  const [prices, setPrices] = useState<Record<string, PriceData>>({});
-  const [previous, setPrevious] = useState<Record<string, number>>({});
-  const [flash, setFlash] = useState<FlashState>({});
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const formatPrice = (n: number) => {
+    if (n >= 1) return n.toFixed(2);
+    if (n >= 0.01) return n.toFixed(4);
+    return n.toFixed(6);
+  };
 
   const fetchAll = useCallback(async () => {
-    for (const { pair } of tokens) {
-      try {
+    try {
+      const results: Record<
+        string,
+        { symbol: string; price: number; change24h: number }
+      > = {};
+
+      for (const { pair } of tokens) {
         const res = await fetch(`/api/price/${pair}`);
         const data = await res.json();
-
         if (!data?.priceUsd || !data?.symbol) continue;
 
-        const price = Number(data.priceUsd);
-        const symbol = data.symbol;
+        results[pair] = {
+          symbol: data.symbol,
+          price: Number(data.priceUsd),
+          change24h: Number(data.change24h ?? 0),
+        };
+      }
 
-        setPrices((prev) => ({
-          ...prev,
-          [pair]: { symbol, priceUsd: price },
-        }));
+      setPrices((prev) => {
+        const next: Record<string, TokenState> = {};
+        const newFlash: Record<string, "up" | "down" | "neutral"> = {};
 
-        if (previous[pair]) {
-          if (price > previous[pair]) {
-            setFlash((f) => ({ ...f, [symbol]: "up" }));
-          } else if (price < previous[pair]) {
-            setFlash((f) => ({ ...f, [symbol]: "down" }));
-          } else {
-            setFlash((f) => ({ ...f, [symbol]: "neutral" }));
+        for (const { pair } of tokens) {
+          const r = results[pair];
+          if (!r) continue;
+
+          const prevToken = prev[pair];
+          const prevPrice = prevToken?.price ?? null;
+          const price = r.price;
+
+          let direction: "up" | "down" | "neutral" = "neutral";
+          if (prevPrice !== null && prevPrice > 0) {
+            direction =
+              price > prevPrice ? "up" : price < prevPrice ? "down" : "neutral";
           }
+
+          next[pair] = {
+            symbol: r.symbol,
+            price,
+            prevPrice,
+            changePct: r.change24h,
+            direction,
+          };
+
+          newFlash[pair] = direction;
         }
 
-        setPrevious((prev) => ({ ...prev, [pair]: price }));
-
-        setTimeout(() => {
-          setFlash((f) => ({ ...f, [symbol]: "neutral" }));
-        }, 1200);
-      } catch {
-        // ignore errors silently
-      }
+        setFlash(newFlash);
+        return next;
+      });
+    } catch (err) {
+      console.error("Ticker API error", err);
     }
-  }, [tokens, previous]);
+  }, [tokens]);
 
   useEffect(() => {
     fetchAll();
-
-    intervalRef.current = setInterval(fetchAll, 30000);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    const interval = setInterval(fetchAll, 45000);
+    return () => clearInterval(interval);
   }, [fetchAll]);
 
-  const items = Object.values(prices);
+  useEffect(() => {
+    if (Object.keys(flash).length === 0) return;
+    const timeout = setTimeout(() => setFlash({}), 1200);
+    return () => clearTimeout(timeout);
+  }, [flash]);
 
-  if (items.length === 0) return null;
+  const items = tokens
+    .map(({ pair }) => {
+      const t = prices[pair];
+      if (!t) return null;
+
+      const dir = flash[pair] ?? "neutral";
+      const arrow = t.changePct > 0 ? "▲" : t.changePct < 0 ? "▼" : "•";
+
+      return (
+        <div key={pair} className={`${styles.item} ${styles[dir]}`}>
+          <span className={styles.symbol}>{t.symbol}</span>
+          <span className={styles.price}>${formatPrice(t.price)}</span>
+          <span className={styles.change}>
+            ({arrow} {t.changePct.toFixed(2)}%)
+          </span>
+        </div>
+      );
+    })
+    .filter((el): el is ReactElement => el !== null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const start = async () => {
+      const node = contentRef.current;
+      if (!node) return;
+
+      const width = node.offsetWidth;
+      if (width === 0) return;
+
+      await controls.set({ x: window.innerWidth });
+      while (!cancelled) {
+        await controls.start({
+          x: -width,
+          transition: {
+            duration: (window.innerWidth + width) / 150, // tweak speed here
+            ease: "linear",
+          },
+        });
+        await controls.set({ x: window.innerWidth });
+      }
+    };
+
+    controls.stop();
+    start();
+
+    const onResize = () => {
+      controls.stop();
+      start();
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("resize", onResize);
+      controls.stop();
+    };
+  }, [controls, items.length]);
 
   return (
-    <div className={styles.container}>
+    <div className={styles.wrapper}>
       <motion.div
-        className={styles.track}
-        animate={{ x: ["100%", "-100%"] }}
-        transition={{ repeat: Infinity, duration: 18, ease: "linear" }}
+        className={styles.scroller}
+        animate={controls}
+        ref={contentRef}
       >
-        {items.map(({ symbol, priceUsd }) => (
-          <span
-            key={symbol}
-            className={`${styles.item} ${
-              flash[symbol] ? styles[flash[symbol]] : styles.neutral
-            }`}
-          >
-            {symbol}: ${priceUsd.toFixed(6)}
-          </span>
-        ))}
-
-        {items.map(({ symbol, priceUsd }) => (
-          <span
-            key={`${symbol}-dup`}
-            className={`${styles.item} ${
-              flash[symbol] ? styles[flash[symbol]] : styles.neutral
-            }`}
-          >
-            {symbol}: ${priceUsd.toFixed(6)}
-          </span>
-        ))}
+        {items}
       </motion.div>
     </div>
   );

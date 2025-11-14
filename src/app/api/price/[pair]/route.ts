@@ -1,31 +1,27 @@
+import { NextResponse } from "next/server";
+
 export async function GET(
-  req: Request,
-  context: { params: Promise<{ pair: string }> }
+  _req: Request,
+  context: { params: Promise<{ pair: string }> } // Next 15: params is async
 ) {
   const { pair } = await context.params;
 
   try {
+    // Dexscreener pair endpoint: chain + pair-address
     const res = await fetch(
       `https://api.dexscreener.com/latest/dex/pairs/base/${pair}`,
-      { next: { revalidate: 15 } }
+      { next: { revalidate: 10 } } // cache hint is fine
     );
+    const json = await res.json();
 
-    const data = await res.json();
+    const p = json?.pairs?.[0] ?? {};
+    const priceUsd = Number(p?.priceUsd ?? 0);
+    const symbol = String(p?.baseToken?.symbol ?? "").toUpperCase();
+    // 24h percentage change (can be string or number in their API)
+    const change24h = Number(p?.priceChange?.h24 ?? 0);
 
-    if (!data.pair) {
-      return Response.json(
-        { error: "Pair not found", priceUsd: null },
-        { status: 404 }
-      );
-    }
-
-    const p = data.pair;
-
-    return Response.json({
-      priceUsd: Number(p.priceUsd),
-      symbol: p.baseToken.symbol,
-    });
+    return NextResponse.json({ symbol, priceUsd, change24h });
   } catch {
-    return Response.json({ error: "API error", priceUsd: null }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch price" }, { status: 500 });
   }
 }

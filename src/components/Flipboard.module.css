@@ -1,0 +1,64 @@
+.container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 25%;
+  background: white;
+  border: 1px solid black;
+  padding: 12px 20px;
+  z-index: 9998;
+}
+
+
+
+
+/* New grid wrapper so rows align like a borderless table */
+.table {
+  display: grid;
+  grid-auto-rows: minmax(32px, auto);
+  row-gap: 8px;              /* same spacing you had between rows */
+}
+
+/* Each row becomes a 3-col grid: symbol | price | percent */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;  /* evenly spaced */
+  align-items: center;
+}
+
+/* Drop fixed widths so columns share space evenly */
+.symbol {
+  font-weight: bold;
+  font-size: 1.1rem;
+  min-width: 0;              /* prevent overflow */
+}
+
+/* Stretch flip cells to fill their grid columns */
+.cell {
+  position: relative;
+  width: 100%;               /* was 180px */
+  height: 32px;
+  overflow: hidden;
+  perspective: 500px;
+  display: flex;
+  align-items: center;
+}
+
+/* Keep your original styles */
+.value {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  backface-visibility: hidden;
+}
+
+.up { color: #0c8a00; }
+.down { color: #cc0000; }
+.neutral { color: black; }
+
+/* Optional: remove bottom margin gap since grid uses row-gap */
+.row:last-child { margin-bottom: 0; }

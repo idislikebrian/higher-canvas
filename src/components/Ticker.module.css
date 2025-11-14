@@ -1,33 +1,56 @@
-.container {
-  width: 100%;
+.wrapper {
+  width: 100vw;
   overflow: hidden;
+  border-top: 1px solid black;
+  position: fixed;
+  bottom: 0;
+  left: 0;
   background: white;
-  border-bottom: 1px solid black;
-  padding: 8px 0;
-  z-index: 999;
 }
 
-.track {
-  display: inline-flex;
+.scroller {
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
 }
 
 .item {
-  margin-right: 48px;
-  font-family: monospace;
-  font-size: 1.125rem;
-  transition: color 0.2s ease;
+  display: inline-flex;
+  gap: 8px;
+  padding: 0 32px;
+  font-size: 20px;
+  line-height: 32px;
+  white-space: nowrap;
 }
 
-/* flash states */
+@keyframes scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Flash colors */
 .up {
-  color: #0c8a00; /* green */
+  background: #d3ffd3;
 }
-
 .down {
-  color: #cc0000; /* red */
+  background: #ffd3d3;
+}
+.neutral {
+  background: white;
 }
 
-.neutral {
-  color: black;
+.symbol {
+  font-weight: bold;
+}
+
+.price {
+  font-weight: 400;
+}
+
+.change {
+  font-size: 0.8rem;
 }

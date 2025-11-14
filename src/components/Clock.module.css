@@ -1,0 +1,33 @@
+.wrapper {
+  position: fixed;
+  bottom: 50px;
+  right: 50px;
+  z-index: 9998;
+}
+
+.card {
+  background: white;
+  border: 1px solid black;
+  padding: 12px 16px;
+  min-width: 220px;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.08);
+}
+
+.city {
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  opacity: .7;
+}
+
+.time {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 32px;
+  line-height: 1.1;
+}
+
+.tz {
+  font-size: 11px;
+  opacity: .5;
+  margin-top: 4px;
+}
