@@ -11,12 +11,11 @@ interface TokenPair {
 interface PriceData {
   symbol: string;
   priceUsd: number;
-  percent: number;
+  percentChange24h: number;
 }
 
 export default function Ribbon({ tokens }: { tokens: TokenPair[] }) {
   const [prices, setPrices] = useState<Record<string, PriceData>>({});
-  const [previous, setPrevious] = useState<Record<string, number>>({});
   const [activeIndex, setActiveIndex] = useState(0);
 
   // FETCH PRICES -------------------------------------------- //
@@ -29,23 +28,17 @@ export default function Ribbon({ tokens }: { tokens: TokenPair[] }) {
 
         const price = Number(data.priceUsd);
         const symbol = data.symbol;
-
-        let percent = 0;
-        if (previous[pair]) {
-          percent = ((price - previous[pair]) / previous[pair]) * 100;
-        }
+        const percentChange24h = Number(data.percentChange24h ?? 0);
 
         setPrices((prev) => ({
           ...prev,
-          [pair]: { symbol, priceUsd: price, percent },
+          [pair]: { symbol, priceUsd: price, percentChange24h },
         }));
-
-        setPrevious((prev) => ({ ...prev, [pair]: price }));
       } catch {
-        // ignore
+        // silently fail
       }
     }
-  }, [tokens, previous]);
+  }, [tokens]);
 
   useEffect(() => {
     fetchAll();
@@ -57,8 +50,7 @@ export default function Ribbon({ tokens }: { tokens: TokenPair[] }) {
   useEffect(() => {
     const rotate = setInterval(() => {
       setActiveIndex((i) => (i + 1) % tokens.length);
-    }, 3500); // duration each token stays visible
-
+    }, 3500);
     return () => clearInterval(rotate);
   }, [tokens.length]);
 
@@ -67,35 +59,37 @@ export default function Ribbon({ tokens }: { tokens: TokenPair[] }) {
 
   if (!active) return null;
 
+  const { symbol, priceUsd, percentChange24h } = active;
+
   return (
     <div className={styles.container}>
       <AnimatePresence mode="wait">
         <motion.div
-          key={active.symbol}
+          key={symbol}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
           className={styles.row}
         >
-          <span className={styles.symbol}>{active.symbol}</span>
+          <span className={styles.symbol}>{symbol}</span>
 
           <span className={styles.price}>
-            ${active.priceUsd.toFixed(6)}
+            ${priceUsd.toFixed(6)}
           </span>
 
           <span
             className={
-              active.percent > 0
+              percentChange24h > 0
                 ? styles.up
-                : active.percent < 0
+                : percentChange24h < 0
                 ? styles.down
                 : styles.neutral
             }
           >
-            {active.percent > 0 && "▲ "}
-            {active.percent < 0 && "▼ "}
-            {active.percent.toFixed(2)}%
+            {percentChange24h > 0 && "▲ "}
+            {percentChange24h < 0 && "▼ "}
+            {percentChange24h.toFixed(2)}%
           </span>
         </motion.div>
       </AnimatePresence>

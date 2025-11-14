@@ -21,10 +21,7 @@ export default function Flipboard({ tokens }: { tokens: TokenPair[] }) {
         const price = Number(data.priceUsd);
         const symbol = data.symbol;
 
-        let percent = 0;
-        if (previous[pair]) {
-          percent = ((price - previous[pair]) / previous[pair]) * 100;
-        }
+        const percent = Number(data.percentChange24h ?? 0);
 
         setPrices((prev) => ({ ...prev, [pair]: { symbol, priceUsd: price, percent } }));
         setPrevious((prev) => ({ ...prev, [pair]: price }));

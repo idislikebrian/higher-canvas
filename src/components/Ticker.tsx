@@ -43,7 +43,7 @@ export default function Ticker({ tokens }: { tokens: Token[] }) {
         results[pair] = {
           symbol: data.symbol,
           price: Number(data.priceUsd),
-          change24h: Number(data.change24h ?? 0),
+          change24h: Number(data.percentChange24h ?? 0),
         };
       }
 
