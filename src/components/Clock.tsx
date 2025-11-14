@@ -14,12 +14,12 @@ const DEFAULT_ZONES: Zone[] = [
   { label: "Tokyo", tz: "Asia/Tokyo" },
   { label: "Jakarta", tz: "Asia/Jakarta" },
   // add-ons you might like:
-  // { label: "Mexico City", tz: "America/Mexico_City" },
+  { label: "Mexico City", tz: "America/Mexico_City" },
   // { label: "São Paulo", tz: "America/Sao_Paulo" },
-  // { label: "Seoul", tz: "Asia/Seoul" },
+  { label: "Seoul", tz: "Asia/Seoul" },
   // { label: "Hong Kong", tz: "Asia/Hong_Kong" },
   // { label: "Berlin", tz: "Europe/Berlin" },
-  // { label: "Mumbai", tz: "Asia/Kolkata" },
+  { label: "Mumbai", tz: "Asia/Kolkata" },
 ];
 
 export default function Clock({
@@ -33,15 +33,18 @@ export default function Clock({
   const [i, setI] = useState(0);
   const iRef = useRef(0);
 
-  console.log("Clock component rendering");
-
-  // tick every second
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // change city every cycleMs
+  useEffect(() => {
+    const id = setInterval(() => {
+      iRef.current = (iRef.current + 1) % zones.length;
+      setI(iRef.current);
+    }, cycleMs);
+    return () => clearInterval(id);
+  }, [zones.length, cycleMs]);
   useEffect(() => {
     const id = setInterval(() => {
       iRef.current = (iRef.current + 1) % zones.length;
@@ -53,7 +56,6 @@ export default function Clock({
   const { label, tz } = zones[i];
 
   const timeStr = useMemo(() => {
-    // HH:MM:SS in 24h
     const parts = new Intl.DateTimeFormat("en-GB", {
       timeZone: tz,
       hour: "2-digit",
@@ -61,7 +63,7 @@ export default function Clock({
       second: "2-digit",
       hour12: false,
     }).format(now);
-    return parts; // already "HH:MM:SS"
+    return parts;
   }, [now, tz]);
 
   return (

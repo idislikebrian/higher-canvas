@@ -39,3 +39,11 @@
 .neutral {
   color: black;
 }
+
+.price :global(.sub) {
+  font-size: 0.65em;
+  vertical-align: sub;
+  opacity: 0.8;
+  position: relative;
+  top: 2px;
+}

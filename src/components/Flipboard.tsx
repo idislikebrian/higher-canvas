@@ -4,12 +4,18 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import styles from "./Flipboard.module.css";
 
-interface TokenPair { pair: string }
-interface PriceData { symbol: string; priceUsd: number; percent: number }
+interface TokenPair {
+  pair: string;
+}
+
+interface PriceData {
+  symbol: string;
+  formattedPrice: string;
+  percent: number;
+}
 
 export default function Flipboard({ tokens }: { tokens: TokenPair[] }) {
   const [prices, setPrices] = useState<Record<string, PriceData>>({});
-  const [previous, setPrevious] = useState<Record<string, number>>({});
 
   const fetchAll = useCallback(async () => {
     for (const { pair } of tokens) {
@@ -18,16 +24,17 @@ export default function Flipboard({ tokens }: { tokens: TokenPair[] }) {
         const data = await res.json();
         if (!data?.priceUsd || !data?.symbol) continue;
 
-        const price = Number(data.priceUsd);
         const symbol = data.symbol;
-
+        const formattedPrice = data.formattedPrice;
         const percent = Number(data.percentChange24h ?? 0);
 
-        setPrices((prev) => ({ ...prev, [pair]: { symbol, priceUsd: price, percent } }));
-        setPrevious((prev) => ({ ...prev, [pair]: price }));
+        setPrices((prev) => ({
+          ...prev,
+          [pair]: { symbol, formattedPrice, percent },
+        }));
       } catch {}
     }
-  }, [tokens, previous]);
+  }, [tokens]);
 
   useEffect(() => {
     fetchAll();
@@ -40,13 +47,12 @@ export default function Flipboard({ tokens }: { tokens: TokenPair[] }) {
 
   return (
     <div className={styles.container}>
-      {/* Grid “table” – 3 columns: symbol | price | percent */}
       <div className={styles.table}>
-        {items.map(({ symbol, priceUsd, percent }) => (
+        {items.map(({ symbol, formattedPrice, percent }) => (
           <div key={symbol} className={styles.row}>
             <div className={styles.symbol}>{symbol}</div>
 
-            <FlipCell value={`$${priceUsd >= 1 ? priceUsd.toFixed(2) : priceUsd >= 0.01 ? priceUsd.toFixed(4) : priceUsd.toFixed(6)}`} />
+            <FlipCell dangerouslyHtml={`$${formattedPrice}`} />
 
             <FlipCell
               value={`${percent > 0 ? "▲ " : percent < 0 ? "▼ " : ""}${percent.toFixed(2)}%`}
@@ -63,13 +69,17 @@ export default function Flipboard({ tokens }: { tokens: TokenPair[] }) {
 // ========= Flip Cell Component ========= //
 function FlipCell({
   value,
+  dangerouslyHtml,
   positive,
   negative,
 }: {
-  value: string;
+  value?: string;
+  dangerouslyHtml?: string;
   positive?: boolean;
   negative?: boolean;
 }) {
+  const contentKey = dangerouslyHtml ?? value ?? "";
+
   return (
     <div
       className={`${styles.cell} ${
@@ -78,14 +88,18 @@ function FlipCell({
     >
       <AnimatePresence mode="popLayout">
         <motion.div
-          key={value}
+          key={contentKey}
           initial={{ rotateX: -90, opacity: 0 }}
           animate={{ rotateX: 0, opacity: 1 }}
           exit={{ rotateX: 90, opacity: 0 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
           className={styles.value}
         >
-          {value}
+          {dangerouslyHtml ? (
+            <span dangerouslySetInnerHTML={{ __html: dangerouslyHtml }} />
+          ) : (
+            value
+          )}
         </motion.div>
       </AnimatePresence>
     </div>

@@ -10,7 +10,7 @@ interface TokenPair {
 
 interface PriceData {
   symbol: string;
-  priceUsd: number;
+  formattedPrice: string;
   percentChange24h: number;
 }
 
@@ -24,15 +24,15 @@ export default function Ribbon({ tokens }: { tokens: TokenPair[] }) {
       try {
         const res = await fetch(`/api/price/${pair}`);
         const data = await res.json();
-        if (!data?.priceUsd || !data?.symbol) continue;
+        if (!data?.formattedPrice || !data?.symbol) continue;
 
-        const price = Number(data.priceUsd);
         const symbol = data.symbol;
+        const formattedPrice = data.formattedPrice;
         const percentChange24h = Number(data.percentChange24h ?? 0);
 
         setPrices((prev) => ({
           ...prev,
-          [pair]: { symbol, priceUsd: price, percentChange24h },
+          [pair]: { symbol, formattedPrice, percentChange24h },
         }));
       } catch {
         // silently fail
@@ -59,7 +59,7 @@ export default function Ribbon({ tokens }: { tokens: TokenPair[] }) {
 
   if (!active) return null;
 
-  const { symbol, priceUsd, percentChange24h } = active;
+  const { symbol, formattedPrice, percentChange24h } = active;
 
   return (
     <div className={styles.container}>
@@ -74,9 +74,10 @@ export default function Ribbon({ tokens }: { tokens: TokenPair[] }) {
         >
           <span className={styles.symbol}>{symbol}</span>
 
-          <span className={styles.price}>
-            ${priceUsd.toFixed(6)}
-          </span>
+          <span
+            className={styles.price}
+            dangerouslySetInnerHTML={{ __html: `$${formattedPrice}` }}
+          />
 
           <span
             className={

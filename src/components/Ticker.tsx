@@ -9,6 +9,7 @@ type Token = { pair: string };
 type TokenState = {
   symbol: string;
   price: number;
+  formattedPrice: string;
   prevPrice: number | null;
   changePct: number;
   direction: "up" | "down" | "neutral";
@@ -22,17 +23,16 @@ export default function Ticker({ tokens }: { tokens: Token[] }) {
   const controls = useAnimation();
   const contentRef = useRef<HTMLDivElement | null>(null);
 
-  const formatPrice = (n: number) => {
-    if (n >= 1) return n.toFixed(2);
-    if (n >= 0.01) return n.toFixed(4);
-    return n.toFixed(6);
-  };
-
   const fetchAll = useCallback(async () => {
     try {
       const results: Record<
         string,
-        { symbol: string; price: number; change24h: number }
+        {
+          symbol: string;
+          priceUsd: number;
+          formattedPrice: string;
+          percentChange24h: number;
+        }
       > = {};
 
       for (const { pair } of tokens) {
@@ -42,8 +42,9 @@ export default function Ticker({ tokens }: { tokens: Token[] }) {
 
         results[pair] = {
           symbol: data.symbol,
-          price: Number(data.priceUsd),
-          change24h: Number(data.percentChange24h ?? 0),
+          priceUsd: Number(data.priceUsd),
+          formattedPrice: data.formattedPrice,
+          percentChange24h: Number(data.percentChange24h ?? 0),
         };
       }
 
@@ -57,7 +58,7 @@ export default function Ticker({ tokens }: { tokens: Token[] }) {
 
           const prevToken = prev[pair];
           const prevPrice = prevToken?.price ?? null;
-          const price = r.price;
+          const price = r.priceUsd;
 
           let direction: "up" | "down" | "neutral" = "neutral";
           if (prevPrice !== null && prevPrice > 0) {
@@ -67,9 +68,10 @@ export default function Ticker({ tokens }: { tokens: Token[] }) {
 
           next[pair] = {
             symbol: r.symbol,
-            price,
+            price: r.priceUsd,
+            formattedPrice: r.formattedPrice,
             prevPrice,
-            changePct: r.change24h,
+            changePct: r.percentChange24h,
             direction,
           };
 
@@ -107,7 +109,14 @@ export default function Ticker({ tokens }: { tokens: Token[] }) {
       return (
         <div key={pair} className={`${styles.item} ${styles[dir]}`}>
           <span className={styles.symbol}>{t.symbol}</span>
-          <span className={styles.price}>${formatPrice(t.price)}</span>
+
+          <span
+            className={styles.price}
+            dangerouslySetInnerHTML={{
+              __html: `$${t.formattedPrice}`,
+            }}
+          />
+
           <span className={styles.change}>
             ({arrow} {t.changePct.toFixed(2)}%)
           </span>
@@ -129,11 +138,11 @@ export default function Ticker({ tokens }: { tokens: Token[] }) {
       await controls.set({ x: window.innerWidth });
       while (!cancelled) {
         await controls.start({
-          x: -width,
-          transition: {
-            duration: (window.innerWidth + width) / 150, // tweak speed here
-            ease: "linear",
-          },
+            x: -width,
+            transition: {
+              duration: (window.innerWidth + width) / 150,
+              ease: "linear",
+            },
         });
         await controls.set({ x: window.innerWidth });
       }
