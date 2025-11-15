@@ -3,6 +3,7 @@ import styles from "./page.module.css";
 import InfoSwitcher from "@/components/InfoSwitcher";
 import BackgroundSwitcher from "@/components/BgSwitcher";
 import Clock from "@/components/Clock";
+import Logo from "@/components/Logo";
 
 export default function Home() {
   return (
@@ -21,6 +22,8 @@ export default function Home() {
             { pair: "0xe35e44adb899804b00e6c61834d2a3785fc3b2defdf6c84078f57db11ed60976" },
           ]}
         />
+
+        <Logo />
 
       </main>
     </div>
