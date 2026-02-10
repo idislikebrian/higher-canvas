@@ -20,6 +20,7 @@ export default function Home() {
             { pair: "0x41b4439d518953b98ccce8fa97942a43feffa90b" },
             { pair: "0xef0491b56d7cc4983b09abee47e8eb2a4d6d3afb" },
             { pair: "0xe35e44adb899804b00e6c61834d2a3785fc3b2defdf6c84078f57db11ed60976" },
+            { pair: "0xaec085e5a5ce8d96a7bdd3eb3a62445d4f6ce703" }
           ]}
         />
 
